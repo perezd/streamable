@@ -27,7 +27,7 @@ var io = require('socket.io').listen(server);
 Once we've setup our server-side dependencies, we need to require streamable. Streamable requires knowledge of our socket.io instance.
 
 ```js
-var streamable = require('streamable').streamable(io)
+var streamable = require('streamable').streamable(io);
 ```
 
 Now that we're all configured, we can start using streamable in our REST API.
