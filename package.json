@@ -1,0 +1,13 @@
+{
+  "name" : "streamable",
+  "version" : "0.1.0",
+  "description" : "Super simple streaming responses for Connect/Express.",
+  "author": {
+    "Derek Perez": "derek@derekperez.com",
+  },
+  "main": "streamable",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/perezd/streamable.git"
+  }
+}

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.10/socket.io.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.8.0/jquery-1.8.0.min.js"></script>
+</head>
+<body>
+</body>
+<script src="/client.js"></script>
+<script type="text/javascript">
+  streamClient.get("/foobar", {
+    onData  : function(d) { console.log('data:' , d); },
+    onError : function(e) { console.log('error:', e); },
+    onEnd   : function()  { console.log('end'); }
+  });
+</script>
+</html>
