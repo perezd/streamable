@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Streamable by perezd</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Streamable</h1>
+        <p>Super simple streaming responses for Connect/Express.</p>
+        <p class="view"><a href="https://github.com/perezd/streamable">View the Project on GitHub <small>perezd/streamable</small></a></p>
+        <ul>
+          <li><a href="https://github.com/perezd/streamable/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/perezd/streamable/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/perezd/streamable">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p>Have you ever wanted to utilize <code>Content-Encoding: chunked</code> in XHR, without waiting for the entire request to complete? With Streamable, you can!</p>
+
+<h2>Getting Started</h2>
+
+<p>install Streamable using npm:</p>
+
+<pre><code>npm install streamable
+</code></pre>
+
+<h3>Server-side</h3>
+
+<p>Streamable assumes you're using Express/Connect as your HTTP server, and Socket.io as an async socket connection to the browser.</p>
+
+<div class="highlight"><pre><span class="c1">// setup a basic express 3.x server</span>
+<span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'express'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">app</span>     <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
+<span class="kd">var</span> <span class="nx">server</span>  <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'http'</span><span class="p">).</span><span class="nx">createServer</span><span class="p">(</span><span class="nx">app</span><span class="p">);</span>
+
+<span class="c1">// setup a basic socket.io server</span>
+<span class="kd">var</span> <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'socket.io'</span><span class="p">).</span><span class="nx">listen</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
+</pre></div>
+
+<p>Once we've setup our server-side dependencies, we need to require streamable. Streamable requires knowledge of our socket.io instance.</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">streamable</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'streamable'</span><span class="p">).</span><span class="nx">streamable</span><span class="p">(</span><span class="nx">io</span><span class="p">)</span>
+</pre></div>
+
+<p>Now that we're all configured, we can start using streamable in our REST API.</p>
+
+<div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/foo'</span><span class="p">,</span> <span class="nx">streamable</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">({</span><span class="nx">foo</span><span class="o">:</span> <span class="s1">'bar'</span><span class="p">});</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"whatever data I want"</span><span class="p">);</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"multiple"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"arguments"</span><span class="p">,</span> <span class="s2">"work"</span><span class="p">,</span> <span class="s2">"too"</span><span class="p">]);</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>Server-side is ready to go.</p>
+
+<h3>Client-side</h3>
+
+<p>Streamable assumes you have jQuery and Socket.io available to your browser, so make sure they are included in page before streamble's client.js.</p>
+
+<p>Once you've included everything you need, add this to your HTML:</p>
+
+<div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
+  <span class="nx">streamClient</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">"/foobar"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nx">onData</span>  <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'data:'</span> <span class="p">,</span> <span class="nx">d</span><span class="p">);</span> <span class="p">},</span>
+    <span class="nx">onError</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'error:'</span><span class="p">,</span> <span class="nx">e</span><span class="p">);</span> <span class="p">},</span>
+    <span class="nx">onEnd</span>   <span class="o">:</span> <span class="kd">function</span><span class="p">()</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'end'</span><span class="p">);</span> <span class="p">}</span>
+  <span class="p">});</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div>
+
+<p>the <code>onData</code> call will happen n times--once per write. The <code>onEnd</code> call is guaranteed to be called one time after all <code>onData</code> and/or <code>onError</code> events have fired. If you've passed multiple values to write on the server-side, you can expect them as arguments in the same order of your <code>onData</code> event handler.</p>
+
+<h2>License</h2>
+
+<p>Copyright (C) 2012 Derek Perez <a href="mailto:derek@derekperez.com">derek@derekperez.com</a></p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/perezd">perezd</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
