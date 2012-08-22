@@ -17,8 +17,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
   if (!jQuery) { throw new Error("jQuery is required"); }
   if (!io)     { throw new Error("socket.io is required"); }
 
-  var socket = io.connect('http://localhost:6565');
-  var client = {};
+  var socket     = io.connect('http://localhost:6565');
+  var streamable = {};
 
   /* a user may start interacting with our request API before
      we can guarantee that we're connected to the socket
@@ -64,7 +64,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
   };
 
 
-  client.get = function(url, options, events) {
+  streamable.get = function(url, options, events) {
 
     if (notConnected) {
       _reqQueue.push([url, options, events]);
@@ -102,6 +102,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
   };
 
-  this.streamClient = client;
+  this.Streamable = streamable;
 
 }.call(this));

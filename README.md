@@ -50,7 +50,7 @@ Once you've included everything you need, add this to your HTML:
 
 ```html
 <script type="text/javascript">
-  streamClient.get("/foo", {
+  Streamable.get("/foo", {
     onData  : function(d) { console.log('data:' , d); },
     onError : function(e) { console.log('error:', e); },
     onEnd   : function()  { console.log('end'); }
