@@ -29,6 +29,12 @@
       <section>
         <p>Have you ever wanted to utilize <code>Content-Encoding: chunked</code> in XHR, without waiting for the entire request to complete? With Streamable, you can!</p>
 
+<h2>Overview</h2>
+
+<p><a href="http://en.wikipedia.org/wiki/Chunked_transfer_encoding">HTTP/1.1 chunked encoding</a> is a really useful feature of the protocol, however, its really disappointing that we cannot interact with it directly via XHR. Instead, we have to wait for the entire request/response cycle to be complete, before we can start interacting with the data thats coming to us over the wire!</p>
+
+<p>Since we cannot rely on the HTTP protocol alone, we use a hybrid strategy that negotiates initially over HTTP at first, then coordinates chunked data transmission using asynchronous pipelines. Ideally, this is accomplished using <a href="http://en.wikipedia.org/wiki/WebSocket">WebSockets</a>, but will feature detect as you would expect, thanks to <a href="http://socket.io">socket.io</a>. So rather than reinventing the HTTP protocol over sockets, we couple the two protocols together into a single API.</p>
+
 <h2>Getting Started</h2>
 
 <p>install Streamable using npm:</p>
@@ -36,45 +42,51 @@
 <pre><code>npm install streamable
 </code></pre>
 
-<h3>Server-side</h3>
+<h2>Server</h2>
 
-<p>Streamable assumes you're using Express/Connect as your HTTP server, and Socket.io as an async socket connection to the browser.</p>
+<p>Streamable is implemented as an <a href="http://www.expressjs.com">Express/Connect</a> middleware, so its really simple to use. It assumes you've got both Socket.io and Express modules already included in your app.</p>
 
-<div class="highlight"><pre><span class="c1">// setup a basic express 3.x server</span>
+<div class="highlight"><pre><span class="c1">// setup an express 3.x server</span>
 <span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'express'</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">app</span>     <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
 <span class="kd">var</span> <span class="nx">server</span>  <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'http'</span><span class="p">).</span><span class="nx">createServer</span><span class="p">(</span><span class="nx">app</span><span class="p">);</span>
 
-<span class="c1">// setup a basic socket.io server</span>
+<span class="c1">// setup a socket.io server and attach it to express</span>
 <span class="kd">var</span> <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'socket.io'</span><span class="p">).</span><span class="nx">listen</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
 </pre></div>
 
-<p>Once we've setup our server-side dependencies, we need to require streamable. Streamable requires knowledge of our socket.io instance.</p>
+<p>Once you've got that setup, its easy to setup Streamable, just pass in your socket.io server instance and the middleware is ready to go.</p>
 
 <div class="highlight"><pre><span class="kd">var</span> <span class="nx">streamable</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'streamable'</span><span class="p">).</span><span class="nx">streamable</span><span class="p">(</span><span class="nx">io</span><span class="p">);</span>
 </pre></div>
 
-<p>Now that we're all configured, we can start using streamable in our REST API.</p>
+<p>At this point, we just drop the Streamable middleware into our routes</p>
 
-<div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/foo'</span><span class="p">,</span> <span class="nx">streamable</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">({</span><span class="nx">foo</span><span class="o">:</span> <span class="s1">'bar'</span><span class="p">});</span>
-  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"whatever data I want"</span><span class="p">);</span>
-  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"multiple"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"arguments"</span><span class="p">,</span> <span class="s2">"work"</span><span class="p">,</span> <span class="s2">"too"</span><span class="p">]);</span>
+<div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/myAPI'</span><span class="p">,</span> <span class="nx">streamable</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s1">'streaming…'</span><span class="p">);</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s1">'streaming…'</span><span class="p">);</span>
   <span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
 <span class="p">});</span>
 </pre></div>
 
-<p>Server-side is ready to go.</p>
+<p>The streamable API also allows you to send fatal and non-fatal errors via the <code>res</code> object.</p>
 
-<h3>Client-side</h3>
+<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">fatal</span><span class="p">(</span><span class="s1">'this will fire the onError event and close the response stream'</span><span class="p">);</span>
+<span class="nx">res</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="err">'</span><span class="k">this</span> <span class="nx">will</span> <span class="nx">fire</span> <span class="nx">the</span> <span class="nx">onError</span> <span class="nx">event</span> <span class="nx">and</span> <span class="nx">keep</span> <span class="nx">going</span><span class="err">"</span><span class="p">);</span>
+</pre></div>
 
-<p>Streamable assumes you have jQuery and Socket.io available to your browser, so make sure they are included in page before streamble's client.js.</p>
+<p>the write API also supports variable arguments, you can expect them as arguments to the <code>onData</code> event handler on the client side.</p>
 
-<p>Once you've included everything you need, add this to your HTML:</p>
+<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"variable"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"args"</span><span class="p">],</span> <span class="p">{</span><span class="nx">are</span><span class="o">:</span> <span class="s2">"supported"</span><span class="p">});</span>
+</pre></div>
+
+<h2>Client</h2>
+
+<p>The client side requires you to have <a href="http://www.jquery.com">jQuery</a> (for XHR) and the socket.io client-side library. Make sure those are loaded before adding the Streamable client JavaScript module. Once its all loaded up, its really easy to start using.</p>
 
 <div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
-  <span class="nx">Streamable</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">"/foo"</span><span class="p">,</span> <span class="p">{</span>
-    <span class="nx">onData</span>  <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'data:'</span> <span class="p">,</span> <span class="nx">d</span><span class="p">);</span> <span class="p">},</span>
+  <span class="nx">Streamable</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">"/myAPI"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nx">onData</span>  <span class="o">:</span> <span class="kd">function</span><span class="p">()</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'data:'</span> <span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span> <span class="p">},</span>
     <span class="nx">onError</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'error:'</span><span class="p">,</span> <span class="nx">e</span><span class="p">);</span> <span class="p">},</span>
     <span class="nx">onEnd</span>   <span class="o">:</span> <span class="kd">function</span><span class="p">()</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'end'</span><span class="p">);</span> <span class="p">}</span>
   <span class="p">});</span>
