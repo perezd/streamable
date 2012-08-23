@@ -14,23 +14,40 @@ function genStreamId() {
 
 
 /* generates a stream object to be used within
-   a REST request. basic API: write/end. */
+   a REST request. basic API: write/error/end. */
 function genStream(sessionId, streamId) {
   var stream;
   var socketSession = __sockets[sessionId];
 
+  var _write = function(data) {
+    socketSession.emit(streamId, data);
+  };
+
   if (socketSession) {
     stream = {
 
+      sessionId : sessionId,
+      streamId  : streamId,
+      socket    : socketSession,
+
       write: function() {
-        var args = Array.prototype.slice.call(arguments, 0);
-        args.unshift(streamId);
-        socketSession.emit.apply(socketSession, args);
+        _write(Array.prototype.slice.call(arguments, 0));
+      },
+
+      error: function(err) {
+        if (err instanceof Error && err.message) { err = err.message; }
+        _write(['err', err]);
+      },
+
+      fatal: function(err) {
+        if (err instanceof Error && err.message) { err = err.message; }
+        _write(['err.', err]);
       },
 
       end: function() {
-        socketSession.emit(streamId, '\n\n\n\n');
+        _write(['\n\n\n\n']);
       }
+
     }
   }
 
@@ -79,9 +96,36 @@ exports.streamable = function(io) {
 
   return function streamableMiddleware(req, res, next) {
     streamResponse(req, res, function(stream) {
-      res.write = stream.write;
-      res.end   = stream.end;
-      next();
+      var ackTimeout, ackEvent = stream.streamId+'ack';
+
+      // if the response stream is not acknowledged
+      // in a timely fashion, we give up on it.
+      ackTimeout = setTimeout(function() {
+        stream.socket.removeAllListeners(ackEvent);
+        stream.fatal(new Error("stream acknowledgement timed out"));
+      }, 5000);
+
+      // once our response stream has been
+      // acknowledged, we allow our middleware
+      // to progress.
+      stream.socket.once(ackEvent, function() {
+        clearTimeout(ackTimeout);
+
+        // writes a buffer to the stream.
+        res.write = stream.write;
+
+        // writes a non-fatal error to the stream.
+        res.error = stream.error;
+
+        // writes a fatal error to the stream, with intent to close the stream.
+        res.fatal = stream.fatal;
+
+        // closes the stream.
+        res.end   = stream.end;
+
+        next();
+      });
+
     });
   }
 }

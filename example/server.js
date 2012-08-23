@@ -11,14 +11,15 @@ var streamable = require('../streamable').streamable(io);
 
 // 4. include streamable in your middleware, and have a blast!
 app.get('/foobar', streamable, function(req, res) {
-  var inter, counter = 31;
+  var inter, counter = 30;
   inter = setInterval(function() {
-    res.write("foobar: "+counter);
+    res.write("foobar:", counter, {foo: 'bar'});
+    if (counter == 20) { res.error(new Error('send a non-fatal error;')); }
     if (--counter == 0) {
       clearInterval(inter);
       res.end();
     }
-  }, 100);
+  }, 50);
 });
 
 

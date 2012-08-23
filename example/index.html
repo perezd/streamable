@@ -9,7 +9,7 @@
 <script src="/client.js"></script>
 <script type="text/javascript">
   Streamable.get("/foobar", {
-    onData  : function(d) { console.log('data:' , d); },
+    onData  : function()  { console.log('data:' , arguments); },
     onError : function(e) { console.log('error:', e); },
     onEnd   : function()  { console.log('end'); }
   });

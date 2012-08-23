@@ -28,12 +28,16 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
   var _reqQueue = [];
   var notConnected = true;
 
-  socket.once('connect', function() {
+  socket.on('connect', function() {
     notConnected = false;
     _reqQueue.forEach(function(req) {
-      client.get.apply(null, req);
+      streamable.get.apply(null, req);
     });
     _reqQueue = [];
+  });
+
+  socket.on('disconnect', function() {
+    notConnected = true;
   });
 
 
@@ -44,13 +48,30 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
       }
 
       socket.on(data.streamId, function onData(payload) {
-        if (payload == '\n\n\n\n') {
+        // this is a completion.
+        if (payload[0] === '\n\n\n\n') {
           socket.removeAllListeners(data.streamId);
           events.onEnd();
+
+        // this is a terminating error.
+        } else if (payload[0] === 'err.') {
+          events.onError(payload[1]);
+          socket.removeAllListeners(data.streamId);
+          events.onEnd();
+
+        // this is a non-terminating error.
+        } else if (payload[0] === 'err') {
+          events.onError(payload[1]);
+
+        // this is a data payload.
         } else {
-          events.onData(payload);
+          events.onData.apply(null, payload);
         }
       });
+
+      // notify server that we're ready to receive
+      // our response stream.
+      socket.emit(data.streamId+'ack');
 
     };
   };
@@ -59,8 +80,9 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
   var handleFail = function(events) {
     return function ajaxFail(jqXHR, textStatus, errorThrown) {
       events.onError(errorThrown);
-      events.onEnd();
-    };
+        socket.removeAllListeners(data.streamId);
+        events.onEnd();
+      };
   };
 
 
