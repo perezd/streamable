@@ -48,7 +48,7 @@ The streamable API also allows you to send fatal and non-fatal errors via the `r
 
 ```js
 res.fatal('this will fire the onError event and close the response stream');
-res.error('this will fire the onError event and keep going");
+res.error('this will fire the onError event and keep going');
 ```
 
 the write API also supports variable arguments, you can expect them as arguments to the `onData` event handler on the client side.
