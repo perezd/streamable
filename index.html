@@ -72,7 +72,7 @@
 <p>The streamable API also allows you to send fatal and non-fatal errors via the <code>res</code> object.</p>
 
 <div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">fatal</span><span class="p">(</span><span class="s1">'this will fire the onError event and close the response stream'</span><span class="p">);</span>
-<span class="nx">res</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="err">'</span><span class="k">this</span> <span class="nx">will</span> <span class="nx">fire</span> <span class="nx">the</span> <span class="nx">onError</span> <span class="nx">event</span> <span class="nx">and</span> <span class="nx">keep</span> <span class="nx">going</span><span class="err">"</span><span class="p">);</span>
+<span class="nx">res</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">'this will fire the onError event and keep going'</span><span class="p">);</span>
 </pre></div>
 
 <p>the write API also supports variable arguments, you can expect them as arguments to the <code>onData</code> event handler on the client side.</p>
