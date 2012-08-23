@@ -17,7 +17,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
   if (!jQuery) { throw new Error("jQuery is required"); }
   if (!io)     { throw new Error("socket.io is required"); }
 
-  var socket     = io.connect('http://localhost:6565');
+  var socket     = io.connect('/streamable');
   var streamable = {};
 
   /* a user may start interacting with our request API before
@@ -25,7 +25,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
      so we must queue up all the requests, and flush them once
      we're sure we're connected to the socket. */
 
-  var _reqQueue = [];
+  var _reqQueue    = [];
   var notConnected = true;
 
   socket.on('connect', function() {
@@ -66,6 +66,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
         // this is a data payload.
         } else {
           events.onData.apply(null, payload);
+
         }
       });
 
@@ -73,21 +74,19 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
       // our response stream.
       socket.emit(data.streamId+'ack');
 
-    };
+    }
   };
 
 
   var handleFail = function(events) {
     return function ajaxFail(jqXHR, textStatus, errorThrown) {
       events.onError(errorThrown);
-        socket.removeAllListeners(data.streamId);
-        events.onEnd();
-      };
+      events.onEnd();
+    }
   };
 
 
   streamable.get = function(url, options, events) {
-
     if (notConnected) {
       _reqQueue.push([url, options, events]);
       return;
@@ -110,9 +109,9 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
        would expect in node.js/EventEmitter.
        ie: expect n data/errors calls and a single
        end event, at the very end, always. */
-    if(!events.onData)  { events.onData  = function(){} };
-    if(!events.onError) { events.onError = function(error){ throw err; } };
-    if(!events.onEnd)   { events.onEnd   = function(){} };
+    if(!events.onData)  { events.onData  = function(){}; };
+    if(!events.onError) { events.onError = function(error){ throw err; }; };
+    if(!events.onEnd)   { events.onEnd   = function(){}; };
 
     jQuery.ajax({
       url      : url,
@@ -121,7 +120,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
     })
       .done(handleDone(events))
       .fail(handleFail(events));
-
   };
 
   this.Streamable = streamable;

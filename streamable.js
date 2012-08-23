@@ -84,7 +84,7 @@ exports.streamable = function(io) {
      process, we must keep an up-to-date mapping
      of session ids to socket references. */
   if (!io.__streamableInit) {
-    io.on('connection', function(socket) {
+    io.of('/streamable').on('connection', function(socket) {
       var socketId = socket.id;
       __sockets[socketId] = socket;
       socket.once('disconnect', function(){
