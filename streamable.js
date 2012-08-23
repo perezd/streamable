@@ -63,7 +63,7 @@ function streamResponse(req, res, fn) {
   if (!sessionId) { return res.json({error: 'sid missing from request'}, 400); }
 
   var streamId = genStreamId();
-  var stream   = genStream(sessionId, streamId)
+  var stream   = genStream(sessionId, streamId);
 
   if (stream) {
     // signal to our caller that we have a stream
