@@ -1,6 +1,10 @@
-# Streamable: Super simple streaming responses for Connect/Express.
-
 Have you ever wanted to utilize `Content-Encoding: chunked` in XHR, without waiting for the entire request to complete? With Streamable, you can!
+
+## Overview
+
+[HTTP/1.1 chunked encoding](http://en.wikipedia.org/wiki/Chunked_transfer_encoding) is a really useful feature of the protocol, however, its really disappointing that we cannot interact with it directly via XHR. Instead, we have to wait for the entire request/response cycle to be complete, before we can start interacting with the data thats coming to us over the wire!
+
+Since we cannot rely on the HTTP protocol alone, we use a hybrid strategy that negotiates initially over HTTP at first, then coordinates chunked data transmission using asynchronous pipelines. Ideally, this is accomplished using [WebSockets](http://en.wikipedia.org/wiki/WebSocket), but will feature detect as you would expect, thanks to [socket.io](http://socket.io). So rather than reinventing the HTTP protocol over sockets, we couple the two protocols together into a single API.
 
 ## Getting Started
 
@@ -10,48 +14,57 @@ install Streamable using npm:
 npm install streamable
 ```
 
-### Server-side
+## Server
 
-Streamable assumes you're using Express/Connect as your HTTP server, and Socket.io as an async socket connection to the browser.
+Streamable is implemented as an [Express/Connect](http://www.expressjs.com) middleware, so its really simple to use. It assumes you've got both Socket.io and Express modules already included in your app.
 
 ```js
-// setup a basic express 3.x server
+// setup an express 3.x server
 var express = require('express');
 var app     = express();
 var server  = require('http').createServer(app);
 
-// setup a basic socket.io server
+// setup a socket.io server and attach it to express
 var io = require('socket.io').listen(server);
 ```
 
-Once we've setup our server-side dependencies, we need to require streamable. Streamable requires knowledge of our socket.io instance.
+Once you've got that setup, its easy to setup Streamable, just pass in your socket.io server instance and the middleware is ready to go.
 
 ```js
 var streamable = require('streamable').streamable(io);
 ```
 
-Now that we're all configured, we can start using streamable in our REST API.
+At this point, we just drop the Streamable middleware into our routes
 
 ```js
-app.get('/foo', streamable, function(req, res) {
-  res.write({foo: 'bar'});
-  res.write("whatever data I want");
-  res.write("multiple", ["arguments", "work", "too"]);
+app.get('/myAPI', streamable, function(req, res){
+  res.write('streaming…');
+  res.write('streaming…');
   res.end();
 });
 ```
-Server-side is ready to go.
 
-### Client-side
+The streamable API also allows you to send fatal and non-fatal errors via the `res` object.
 
-Streamable assumes you have jQuery and Socket.io available to your browser, so make sure they are included in page before streamble's client.js.
+```js
+res.fatal('this will fire the onError event and close the response stream');
+res.error('this will fire the onError event and keep going");
+```
 
-Once you've included everything you need, add this to your HTML:
+the write API also supports variable arguments, you can expect them as arguments to the `onData` event handler on the client side.
+
+```js
+res.write("variable", ["args"], {are: "supported"});
+```
+
+## Client
+
+The client side requires you to have [jQuery](http://www.jquery.com) (for XHR) and the socket.io client-side library. Make sure those are loaded before adding the Streamable client JavaScript module. Once its all loaded up, its really easy to start using.
 
 ```html
 <script type="text/javascript">
-  Streamable.get("/foo", {
-    onData  : function(d) { console.log('data:' , d); },
+  Streamable.get("/myAPI", {
+    onData  : function()  { console.log('data:' , arguments); },
     onError : function(e) { console.log('error:', e); },
     onEnd   : function()  { console.log('end'); }
   });

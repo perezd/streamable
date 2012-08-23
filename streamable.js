@@ -45,6 +45,9 @@ function genStream(sessionId, streamId) {
       },
 
       end: function() {
+        if (arguments.length != 0) {
+          _write(Array.prototype.slice.call(arguments, 0));
+        }
         _write(['\n\n\n\n']);
       }
 
