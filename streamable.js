@@ -35,13 +35,11 @@ function genStream(sessionId, streamId) {
       },
 
       error: function(err) {
-        if (err instanceof Error && err.message) { err = err.message; }
-        _write(['err', err]);
+        _write(['err', err.toString()]);
       },
 
       fatal: function(err) {
-        if (err instanceof Error && err.message) { err = err.message; }
-        _write(['err.', err]);
+        _write(['err.', err.toString()]);
       },
 
       end: function() {
@@ -98,6 +96,17 @@ exports.streamable = function(io) {
   }
 
   return function streamableMiddleware(req, res, next) {
+
+    // allow the HTTP caller to decide to disable the streamable
+    // responses. This will require that your REST API still
+    // relies on chunked encoding primitives (write/end, etc.)
+    if (req.header('x-streamable-bypass')) {
+      // add fallback support for the Streamable API here.
+      res.error = function(e) { res.write(e.toString()); }
+      res.fatal = function(e) { res.end(e.toString()); }
+      return next();
+    }
+
     streamResponse(req, res, function(stream) {
       var ackTimeout, ackEvent = stream.streamId+'ack';
 
