@@ -81,7 +81,7 @@ function streamResponse(req, res, fn) {
 function encodeValue(value, encoding) {
   if (encoding === 'json') {
     return JSON.stringify(value);
-  else if (encoding === 'binary') {
+  } else if (encoding === 'binary') {
     throw new TypeError("Binary encoding not supported. Patches accepted!");
   } else {
     return String(value);
