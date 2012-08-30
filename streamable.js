@@ -30,8 +30,8 @@ function genStream(sessionId, streamId) {
       streamId  : streamId,
       socket    : socketSession,
 
-      write: function() {
-        _write(Array.prototype.slice.call(arguments, 0));
+      write: function(data) {
+        _write(['data', data]);
       },
 
       error: function(err) {
@@ -42,11 +42,9 @@ function genStream(sessionId, streamId) {
         _write(['err.', err.toString()]);
       },
 
-      end: function() {
-        if (arguments.length != 0) {
-          _write(Array.prototype.slice.call(arguments, 0));
-        }
-        _write(['\n\n\n\n']);
+      end: function(data) {
+        if (data) { _write(['data', data]); }
+        _write(['end']);
       }
 
     }
@@ -78,6 +76,19 @@ function streamResponse(req, res, fn) {
 }
 
 
+/* encode a value to a string-oriented representation.
+   we currently do not support binary streaming. */
+function encodeValue(value, encoding) {
+  if (encoding === 'json') {
+    return JSON.stringify(value);
+  else if (encoding === 'binary') {
+    throw new TypeError("Binary encoding not supported. Patches accepted!");
+  } else {
+    return String(value);
+  }
+}
+
+
 exports.streamable = function(io) {
 
   /* because streamable relies on knowing
@@ -100,10 +111,25 @@ exports.streamable = function(io) {
     // allow the HTTP caller to decide to disable the streamable
     // responses. This will require that your REST API still
     // relies on chunked encoding primitives (write/end, etc.)
-    if (req.header('x-streamable-bypass')) {
+    if (req.header('x-streamable-bypass') || !req.query.sid) {
+
+      // configurable message delimeter for non-socket streaming.
+      var reqDelim = (req.header('x-streamable-delimiter') || '\r\n');
+
       // add fallback support for the Streamable API here.
-      res.error = function(e) { res.write(e.toString()); }
-      res.fatal = function(e) { res.end(e.toString()); }
+      var origWrite = res.write;
+
+      // because streamable's API allows you to send variable
+      // arguments with each write, we must concat the writes
+      // as string values, delimited by commas, followed by a
+      // \n to represent the end of that "atomic" write of values.
+      res.write = function(value, encoding) {
+        origWrite.call(res, encodeValue(value, encoding)+reqDelim);
+      };
+
+      res.error = function(err) { res.write.call(res, String(err)); };
+      res.fatal = function(err) { res.end.call(res, String(err)); };
+      res.header('x-streamable-bypass', '1');
       return next();
     }
 
@@ -114,7 +140,6 @@ exports.streamable = function(io) {
       // in a timely fashion, we give up on it.
       ackTimeout = setTimeout(function() {
         stream.socket.removeAllListeners(ackEvent);
-        stream.fatal(new Error("stream acknowledgement timed out"));
       }, 5000);
 
       // once our response stream has been
@@ -124,16 +149,25 @@ exports.streamable = function(io) {
         clearTimeout(ackTimeout);
 
         // writes a buffer to the stream.
-        res.write = stream.write;
+        res.write = function(value, encoding) {
+          stream.write.call(res, encodeValue(value, encoding));
+        };
 
         // writes a non-fatal error to the stream.
-        res.error = stream.error;
+        res.error = function(err) {
+          stream.error.call(res, String(err));
+        };
 
         // writes a fatal error to the stream, with intent to close the stream.
-        res.fatal = stream.fatal;
+        res.fatal = function(err) {
+          stream.fatal.call(res, String(err));
+        };
 
         // closes the stream.
-        res.end   = stream.end;
+        res.end = function() {
+          if (arguments.length != 0) { res.write.apply(res, arguments); }
+          stream.end.call(res);
+        };
 
         next();
       });

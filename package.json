@@ -1,6 +1,6 @@
 {
   "name" : "streamable",
-  "version" : "0.5.0",
+  "version" : "0.6.0",
   "description" : "Super simple streaming responses for Connect/Express.",
   "author": {
     "Derek Perez": "derek@derekperez.com"

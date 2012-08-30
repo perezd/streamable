@@ -49,7 +49,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
       socket.on(data.streamId, function onData(payload) {
         // this is a completion.
-        if (payload[0] === '\n\n\n\n') {
+        if (payload[0] === 'end') {
           socket.removeAllListeners(data.streamId);
           events.onEnd();
 
@@ -64,8 +64,12 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
           events.onError(payload[1]);
 
         // this is a data payload.
-        } else {
-          events.onData.apply(null, payload);
+        } else if (payload[0] === 'data') {
+          try {
+            events.onData.call(events, JSON.parse(payload[1]));
+          } catch (err) {
+            events.onData.call(events, payload[1]);
+          }
 
         }
       });

@@ -13,8 +13,8 @@ var streamable = require('../streamable').streamable(io);
 app.get('/foobar', streamable, function(req, res) {
   var inter, counter = 30;
   inter = setInterval(function() {
-    res.write("foobar:", counter, {foo: 'bar'});
-    if (counter == 20) { res.error(new Error('send a non-fatal error;')); }
+    res.write(["foobar:", counter, {foo: 'bar'}], 'json');
+    if (counter == 20) { res.error(new Error('send a non-fatal error')); }
     if (--counter == 0) {
       clearInterval(inter);
       res.end();
