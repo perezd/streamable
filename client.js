@@ -14,31 +14,54 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 (function(){
 
-  if (!jQuery) { throw new Error("jQuery is required"); }
-  if (!io)     { throw new Error("socket.io is required"); }
+  if (!window.jQuery) { throw new Error("jQuery is required"); }
+  if (!window.io)     { throw new Error("socket.io is required"); }
 
-  var socket     = io.connect('/streamable');
-  var streamable = {};
+
+  var socket     = null
+  var streamable = {
+    config: {
+      host: window.location.origin // assume localhost and local protocol.
+    }
+  };
+
 
   /* a user may start interacting with our request API before
      we can guarantee that we're connected to the socket
      so we must queue up all the requests, and flush them once
      we're sure we're connected to the socket. */
 
-  var _reqQueue    = [];
-  var notConnected = true;
+  var _reqQueue        = [];
 
-  socket.on('connect', function() {
-    notConnected = false;
-    _reqQueue.forEach(function(req) {
-      streamable.get.apply(null, req);
+  /* socket connectivity is managed in a lazy fashion.
+     ie: if Streamable is required into the browser, but never
+     used, we don't waste a socket connection. */
+  var _NOT_CONNECTED = 0
+  ,   _CONNECTING    = 1
+  ,   _CONNECTED     = 2
+  , connectionStatus = _NOT_CONNECTED;
+
+  var doConnectLazy = function() {
+    socket = io.connect(streamable.config.host+'/streamable');
+    connectionStatus = _CONNECTING;
+
+    socket.on('connect', function() {
+      connectionStatus = _CONNECTED;
+      _reqQueue.forEach(function(req) {
+        streamable.get.apply(null, req);
+      });
+      _reqQueue = [];
     });
-    _reqQueue = [];
-  });
 
-  socket.on('disconnect', function() {
-    notConnected = true;
-  });
+    socket.on('error', function(e) {
+      connectionStatus = _NOT_CONNECTED;
+      throw e;
+    });
+
+    socket.on('disconnect', function() {
+      connectionStatus = _NOT_CONNECTED // not connected.
+    });
+  };
 
 
   var handleDone = function(events) {
@@ -91,8 +114,9 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 
   streamable.get = function(url, options, events) {
-    if (notConnected) {
+    if (connectionStatus != _CONNECTED) {
       _reqQueue.push([url, options, events]);
+      if (connectionStatus != _CONNECTING) { doConnectLazy(); }
       return;
     }
 
