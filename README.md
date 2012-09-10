@@ -6,11 +6,11 @@ Have you ever wanted to utilize `Content-Encoding: chunked` in XHR, without wait
 
 Since we cannot rely on the HTTP protocol alone, we use a hybrid strategy that negotiates initially over HTTP at first, then coordinates chunked data transmission using asynchronous pipelines. Ideally, this is accomplished using [WebSockets](http://en.wikipedia.org/wiki/WebSocket), but will feature detect as you would expect, thanks to [socket.io](http://socket.io). So rather than reinventing the HTTP protocol over sockets, we couple the two protocols together into a single API.
 
-Streamable is designed to feel transparent. If you access a streamable REST endpoint without the Streamable client, native chunked encoding will happen in its place. You can also explicitly disable Streamable for a particular request by sending the `x-streamable-bypass` request header. If streamable is bypassed, each message will be delimeted with `\r\n`. This is also configurable by provided the `x-streamable-delimiter` request header, providing the value you'd like to use instead.
+Streamable is designed to feel transparent. If you access a streamable REST endpoint without the Streamable client, native chunked encoding will happen in its place. You can also explicitly disable Streamable for a particular request by sending the `x-streamable-bypass` request header. If streamable is bypassed, each message will be delimited with `\r\n`. This is also configurable by provided the `x-streamable-delimiter` request header, providing the value you'd like to use instead.
 
 ## Getting Started
 
-install Streamable using npm:
+Install Streamable using npm:
 
 ```
 npm install streamable
