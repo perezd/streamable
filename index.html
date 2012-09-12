@@ -35,9 +35,11 @@
 
 <p>Since we cannot rely on the HTTP protocol alone, we use a hybrid strategy that negotiates initially over HTTP at first, then coordinates chunked data transmission using asynchronous pipelines. Ideally, this is accomplished using <a href="http://en.wikipedia.org/wiki/WebSocket">WebSockets</a>, but will feature detect as you would expect, thanks to <a href="http://socket.io">socket.io</a>. So rather than reinventing the HTTP protocol over sockets, we couple the two protocols together into a single API.</p>
 
+<p>Streamable is designed to feel transparent. If you access a streamable REST endpoint without the Streamable client, native chunked encoding will happen in its place. You can also explicitly disable Streamable for a particular request by sending the <code>x-streamable-bypass</code> request header. If streamable is bypassed, each message will be delimited with <code>\r\n</code>. This is also configurable by provided the <code>x-streamable-delimiter</code> request header, providing the value you'd like to use instead.</p>
+
 <h2>Getting Started</h2>
 
-<p>install Streamable using npm:</p>
+<p>Install Streamable using npm:</p>
 
 <pre><code>npm install streamable
 </code></pre>
@@ -71,13 +73,13 @@
 
 <p>The streamable API also allows you to send fatal and non-fatal errors via the <code>res</code> object.</p>
 
-<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">fatal</span><span class="p">(</span><span class="s1">'this will fire the onError event and close the response stream'</span><span class="p">);</span>
-<span class="nx">res</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">'this will fire the onError event and keep going'</span><span class="p">);</span>
+<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">fatal</span><span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">'this will fire the onError event and close the response stream'</span><span class="p">));</span>
+<span class="nx">res</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">'this will fire the onError event and keep going'</span><span class="p">));</span>
 </pre></div>
 
-<p>the write API also supports variable arguments, you can expect them as arguments to the <code>onData</code> event handler on the client side.</p>
+<p>the write API also supports <code>json</code> as a valid encoding, for convenience.</p>
 
-<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"variable"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"args"</span><span class="p">],</span> <span class="p">{</span><span class="nx">are</span><span class="o">:</span> <span class="s2">"supported"</span><span class="p">});</span>
+<div class="highlight"><pre><span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">([</span><span class="s2">"here"</span><span class="p">,</span> <span class="s2">"is"</span><span class="p">,</span> <span class="p">{</span><span class="nx">some</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">}],</span> <span class="s1">'json'</span><span class="p">);</span>
 </pre></div>
 
 <h2>Client</h2>
@@ -86,7 +88,7 @@
 
 <div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
   <span class="nx">Streamable</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">"/myAPI"</span><span class="p">,</span> <span class="p">{</span>
-    <span class="nx">onData</span>  <span class="o">:</span> <span class="kd">function</span><span class="p">()</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'data:'</span> <span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span> <span class="p">},</span>
+    <span class="nx">onData</span>  <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'data:'</span> <span class="p">,</span> <span class="nx">data</span><span class="p">);</span> <span class="p">},</span>
     <span class="nx">onError</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'error:'</span><span class="p">,</span> <span class="nx">e</span><span class="p">);</span> <span class="p">},</span>
     <span class="nx">onEnd</span>   <span class="o">:</span> <span class="kd">function</span><span class="p">()</span>  <span class="p">{</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'end'</span><span class="p">);</span> <span class="p">}</span>
   <span class="p">});</span>
