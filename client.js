@@ -112,6 +112,19 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
     }
   };
 
+  // From: https://github.com/dominictarr/crypto-browserify/blob/master/rng.js
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  var mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  };
 
   streamable.get = function(url, options, events) {
     if (connectionStatus != _CONNECTED) {
@@ -132,6 +145,10 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
        so that we know which session to send the stream to. */
     var params = options.params ? options.params : {};
     params.sid = socket.socket.sessionid;
+
+    /* introduce randomness to querystring to make
+       each request unique. */
+    params['r' + mathRNG(8).join('')] = 1;
 
     /* event API is very similar to what you
        would expect in node.js/EventEmitter.
