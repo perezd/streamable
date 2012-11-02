@@ -1,3 +1,5 @@
+# Streamable
+
 Have you ever wanted to utilize `Content-Encoding: chunked` in XHR, without waiting for the entire request to complete? With Streamable, you can!
 
 ## Overview
